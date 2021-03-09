@@ -18,12 +18,20 @@
         }
     }
 <?
+    
+    
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Maps harjutus</title>
+    <title>Simple Map</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script
+      src="https://unpkg.com/@googlemaps/markerclustererplus/dist/index.min.js"
+      src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap&libraries=&v=weekly"
+      defer
+    ></script>
     <style type="text/css">
+      
       #map {
         height: 100%;
       }
@@ -34,82 +42,134 @@
         margin: 0;
         padding: 0;
       }
-
-      #floating-panel {
-        position: absolute;
-        top: 10px;
-        left: 25%;
-        z-index: 5;
-        background-color: #fff;
-        padding: 5px;
-        border: 1px solid #999;
-        text-align: center;
-        font-family: "Roboto", "sans-serif";
-        line-height: 30px;
-        padding-left: 10px;
-      }
     </style>
     <script>
       let map;
-      let markers = [];
+
+      let markers = [<?php 
+            foreach ($markers as $index => $row) {
+              if ($index === array_key_last($markers)){
+                echo "[" . $row->id . "," . $row->latitude . "," . $row->longitude . ",'" . $row->name . "','" . $row->description . "']";
+              } else {
+                echo "[" . $row->id . "," . $row->latitude . "," . $row->longitude . ",'" . $row->name . "','" . $row->description . "'],";
+              }
+            }?>];
 
       function initMap() {
-        const haightAshbury = { lat: 59.436962, lng: 24.753574 };
+
+        
+
         map = new google.maps.Map(document.getElementById("map"), {
-          zoom: 12,
-          center: haightAshbury,
-          mapTypeId: "terrain",
+          center: { lat: 58, lng: 22 },
+          zoom: 8,
         });
-        map.addListener("click", (event) => {
+
+        markers.forEach(item => {
+          let marker = new google.maps.Marker({
+            position: {lat: item[1], lng: item[2]},
+            animation: google.maps.Animation.DROP,
+            draggable: true,
+            map:map,
+          })
+
+          let infowindow = new google.maps.InfoWindow({
+            content: 
+              "<form method='post'>\
+                  <div>Latitude: " + item[1] + "</div>\
+                  <div>Longitude: " + item[2] + "</div>\
+                  <input type='hidden' name='latitude' value=" + item[1] + ">\
+                  <input type='hidden' name='longitude' value=" + item[2] + ">\
+                  <input type='hidden' name='id' value=" + item[0] + ">\
+                  <div>\
+                    <label for='name'>Name</label>\
+                    <input type=text name='name' value='" + item[3] + "'>\
+                  </div>\
+                  <div>\
+                    <label for='description'>Description</label>\
+                    <input type=text name='description' value='" + item[4] +"'>\
+                  <div>\
+                  <button type='submit' name='edit'>Edit</button>\
+                  <button type='submit' name='delete'>Delete</button>\
+                </form>\
+              "
+          });
+          marker.addListener("click", () => {
+            infowindow.open(map, marker);
+          });
+
+          marker.addListener("dragend", function(event) {
+            infowindow.setContent(  
+                "<form method='post'>\
+                    <div>Latitude: " + event.latLng.lat().toFixed(4)  + "</div>\
+                    <div>Longitude: " + event.latLng.lng().toFixed(4) + "</div>\
+                    <input type='hidden' name='latitude' value=" + event.latLng.lat() + ">\
+                    <input type='hidden' name='longitude' value=" + event.latLng.lng() + ">\
+                    <input type='hidden' name='id' value=" + item[0] + ">\
+                    <div>\
+                      <label for='name'>Name</label>\
+                      <input type=text name='name' value='" + item[3] + "'>\
+                    </div>\
+                    <div>\
+                      <label for='description'>Description</label>\
+                      <input type=text name='description' value='" + item[4] +"'>\
+                    <div>\
+                    <button type='submit' name='edit'>Edit</button>\
+                    <button type='submit' name='delete'>Delete</button>\
+                  </form>\
+                ");
+            
+          });
+        });
+
+        google.maps.event.addListener(map, "click", function(event) {
           addMarker(event.latLng);
         });
-        addMarker(haightAshbury);
-      }
 
-      function addMarker(location) {
-        const marker = new google.maps.Marker({
-          position: location,
-          map: map,
-        });
-        markers.push(marker);
-      }
+        function addMarker(data) {
 
-      // Sets the map on all markers
-      function setMapOnAll(map) {
-        for (let i = 0; i < markers.length; i++) {
-          markers[i].setMap(map);
-        }
-      }
+          let marker = new google.maps.Marker({
+            position: data,
+            animation: google.maps.Animation.DROP,
+            map:map,
+          });
 
-      // Removes markers , but keeps in array.
-      function clearMarkers() {
-        setMapOnAll(null);
-      }
+          let infowindow = new google.maps.InfoWindow({
+            content: 
+              "<form method='post'>\
+                  <div>Latitude: " + data.lat().toFixed(4)  + "</div>\
+                  <div>Longitude: " + data.lng().toFixed(4)  + "</div>\
+                  <input type='hidden' name='latitude' value=" + data.lat() +">\
+                  <input type='hidden' name='longitude' value=" + data.lng() +">\
+                  <div>\
+                    <label for='name'>Name</label>\
+                    <input type=text name='name'>\
+                  </div>\
+                  <div>\
+                    <label for='description'>Description</label>\
+                    <input type=text name='description'>\
+                  <div>\
+                  <button type='submit' name='action'>Save</button>\
+                </form>\
+              "
+          });
+         
+          infowindow.open(map, marker);
 
-      // Shows markers
-      function showMarkers() {
-        setMapOnAll(map);
-      }
+          infowindow.addListener("closeclick", () => {
+            marker.setMap(null);
+          });
 
-      // Deletes markers
-      function deleteMarkers() {
-        clearMarkers();
-        markers = [];
+          map.addListener("click", () => {
+            marker.setMap(null);
+          })
+
+        };
       }
+      var markerCluster = new MarkerClusterer(map, markers,
+            {imagePath: `${m4.png}/m`});
     </script>
   </head>
   <body>
-    <div id="floating-panel">
-      <input onclick="clearMarkers();" type="button" value="Hide Markers" />
-      <input onclick="showMarkers();" type="button" value="Show All Markers" />
-      <input onclick="deleteMarkers();" type="button" value="Delete Markers" />
-    </div>
     <div id="map"></div>
-    <p>Click on the map to add markers.</p>
-
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap&libraries=&v=weekly"
-      async
-    ></script>
   </body>
 </html>
