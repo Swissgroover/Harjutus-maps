@@ -1,7 +1,7 @@
 <?php
     $config = require_once 'config.php';
-    $config = require_once 'db.php';
-    $config = require_once 'locations_model.php';
+    include_once 'db.php';
+    include_once 'locations_model.php';
 
     function connection ($config) {
         $dsn = "mysql:host=" . $config['host'] . ";dbname=" . $config['database'];
