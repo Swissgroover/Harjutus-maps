@@ -1,4 +1,5 @@
 <?php
+$config = require_once 'config.php';
 include_once 'header.php';
 include 'locations_model.php';
 ?>
